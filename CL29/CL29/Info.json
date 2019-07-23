@@ -2,10 +2,10 @@
   "Id": "CL29",
   "DisplayName": "Character Level 29",
   "Author": "OldMelkhior",
-  "Version": "0.6.0",
+  "Version": "0.7.0",
   "ManagerVersion": "0.17.0",
   "Requirements": [],
   "AssemblyName": "CL29.dll",
-  "HomePage": "",
+  "HomePage": "https://www.nexusmods.com/pathfinderkingmaker/mods/121",
   "EntryMethod": "CL29.Main.Load"
 }
