@@ -8,7 +8,9 @@ using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.UnitLogic;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.UnitLogic.Parts;
 using System.Collections.Generic;
+using Kingmaker.PubSubSystem;
 
 namespace CL29
 {
@@ -366,6 +368,31 @@ namespace CL29
             {
                 if (level > 20)
                     level = 41 - level;
+                return true;
+            }
+        }
+
+
+        [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.UnitProgressionData), "GainExperience")]
+        // ReSharper disable once UnusedMember.Local
+        private static class MoreCharacterLevelPatch7
+        {
+            private static bool Prefix(MethodBase __originalMethod, UnitProgressionData __instance, ref int exp, bool log)
+            {
+                // logger.Log($"Trying to add {exp} XP to a current value of {__instance.Experience}, using {Game.Instance.Player.ExperienceRatePercent}%.");
+                const int limit = 10000000;
+                int temp = exp;
+                if (temp <= limit)
+                    return true;
+                while (temp > limit)
+                {
+                    Object[] p = { limit, log };
+                    __originalMethod.Invoke(__instance, p);
+                    temp -= limit;
+                    // logger.Log($" ... intermediate result is  {__instance.Experience}");
+                }
+                exp = temp;
+                // logger.Log($" ... final result is  {__instance.Experience}");
                 return true;
             }
         }
