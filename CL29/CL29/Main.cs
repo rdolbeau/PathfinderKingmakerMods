@@ -1,22 +1,21 @@
-﻿using UnityModManagerNet;
-using System;
-using System.Reflection;
-using System.Linq;
+﻿using Kingmaker;
 using Kingmaker.Blueprints;
-using Kingmaker;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Spells;
-using Kingmaker.UnitLogic;
+using Kingmaker.Blueprints.Facts;
 using Kingmaker.EntitySystem.Entities;
-using Kingmaker.UnitLogic.Parts;
+using Kingmaker.UnitLogic;
+using System;
 using System.Collections.Generic;
-using Kingmaker.PubSubSystem;
+using System.Reflection;
+using UnityModManagerNet;
 
 namespace CL29
 {
     public class Settings : UnityModManager.ModSettings
     {
         public bool enableLinearScale = false;
+        public bool enableSuperPet = false;
         public int maxLevel = Main.normalMax;
 
         public override void Save(UnityModManager.ModEntry modEntry)
@@ -265,10 +264,203 @@ namespace CL29
                     }
                 }
             }
+            if (!tablePatched)
+            {
+                if (!updateAnimalCompanion())
+                {
+                    logger.Warning($"Failed to update AnimalCompanion");
+                }
+            }
             tablePatched = true;
             return true;
         }
 
+
+        public static T GetBlueprint<T>(string value) where T : BlueprintScriptableObject
+        {
+            T res = Kingmaker.Cheats.Utilities.GetBlueprint<T>(value);
+            if (res == null)
+            {
+                logger.Error($"Failed to load Blueprint of name {value}, whose type should be {typeof(T).ToString()}");
+            }
+            else
+            {
+                //Main.logger.Log($"Found Blueprint of name {value}, whose type is {typeof(T).ToString()}, with ID {res.GetInstanceID().ToString()}");
+            }
+            return res;
+        }
+
+        // {} [] <> ()
+        // duplicated / expanded from Kingmaker.UnitLogic.FactLogic.AddPet.RankToLevel
+        private static readonly int[] RankToLevel = new int[]
+        {
+            0,
+            2,
+            3,
+            3,
+            4,
+            5,
+            6,
+            6,
+            7,
+            8,
+            9,
+            9,
+            10,
+            11,
+            12,
+            12,
+            13,
+            14,
+            15,
+            15,
+            16,
+            17, 18, 18, 19, 20, 21, 21, 22, 23, 24,
+            24, 25, 26, 27, 27, 28, 29, 30, 30, 31
+        };
+        // {} [] <> ()
+        private static bool updateAnimalCompanion()
+        {
+            const int extraLevel = 20;
+            {
+                BlueprintArchetype aca = GetBlueprint<BlueprintArchetype>("AnimalCompanionArchetype");
+                if (aca == null)
+                    return false;
+                int acal = aca.AddFeatures.Length;
+                logger.Log($"AnimalCompanionArchetype AddFeatures.Length: {acal}");
+                // LevelEntry source = aca.AddFeatures[acal - 1] as LevelEntry;
+                // if (source == null)
+                // return false;
+                System.Array.Resize(ref aca.AddFeatures, acal + extraLevel);
+                for (int i = acal; i < acal + extraLevel; i++)
+                {
+                    LevelEntry nl = new LevelEntry();
+                    nl.Level = aca.AddFeatures[i - 1].Level + 1;
+                    nl.Features = new List<BlueprintFeatureBase>();
+                    if (nl.Level % 2 == 0)
+                    {
+                        BlueprintFeature bf = GetBlueprint<BlueprintFeature>("AnimalCompanionNaturalArmor");
+                        if (bf != null)
+                        {
+                            bf.Ranks++;
+                            nl.Features.Add(bf);
+                        }
+                        else logger.Warning($"Can't find AnimalCompanionNaturalArmor");
+                    }
+                    else
+                    {
+                        BlueprintFeature bf = GetBlueprint<BlueprintFeature>("AnimalCompanionStrengthDexterityConstitution");
+                        if (bf != null)
+                        {
+                            bf.Ranks++;
+                            nl.Features.Add(bf);
+                        }
+                        else logger.Warning($"Can't find AnimalCompanionStrengthDexterityConstitution");
+                    }
+                    if (nl.Level % 3 == 0)
+                    {
+                        BlueprintFeature bf = GetBlueprint<BlueprintFeature>("AnimalCompanionAttacksEnhancement");
+                        if (bf != null)
+                        {
+                            bf.Ranks++;
+                            nl.Features.Add(bf);
+                        }
+                        else logger.Warning($"Can't find AnimalCompanionAttacksEnhancement");
+                    }
+                    aca.AddFeatures[i] = nl;
+                }
+                logger.Log($"AnimalCompanionArchetype NEW AddFeatures.Length: {aca.AddFeatures.Length}");
+            }
+            {
+                BlueprintProgression acbp = GetBlueprint<BlueprintProgression>("AnimalCompanionBonusesProgression");
+                if (acbp == null)
+                    return false;
+                int acbpl = acbp.LevelEntries.Length;
+                logger.Log($"AnimalCompanionBonusesProgression LevelEntries.Length: {acbpl}");
+                // LevelEntry source = aca.AddFeatures[acal - 1] as LevelEntry;
+                // if (source == null)
+                // return false;
+                System.Array.Resize(ref acbp.LevelEntries, acbpl + extraLevel);
+                for (int i = acbpl; i < acbpl + extraLevel; i++)
+                {
+                    LevelEntry nl = new LevelEntry();
+                    nl.Level = acbp.LevelEntries[i - 1].Level + 1;
+                    nl.Features = new List<BlueprintFeatureBase>();
+                    if (nl.Level % 2 == 0)
+                    {
+                        BlueprintFeature bf = GetBlueprint<BlueprintFeature>("AnimalCompanionNaturalArmor");
+                        if (bf != null)
+                        {
+                            //bf.Ranks++;
+                            nl.Features.Add(bf);
+                        }
+                        else logger.Warning($"Can't find AnimalCompanionNaturalArmor");
+                    }
+                    else
+                    {
+                        BlueprintFeature bf = GetBlueprint<BlueprintFeature>("AnimalCompanionStrengthDexterityConstitution");
+                        if (bf != null)
+                        {
+                            //bf.Ranks++;
+                            nl.Features.Add(bf);
+                        }
+                        else logger.Warning($"Can't find AnimalCompanionStrengthDexterityConstitution");
+                    }
+                    if (nl.Level % 3 == 0)
+                    {
+                        BlueprintFeature bf = GetBlueprint<BlueprintFeature>("AnimalCompanionAttacksEnhancement");
+                        if (bf != null)
+                        {
+                            //bf.Ranks++;
+                            nl.Features.Add(bf);
+                        }
+                        else logger.Warning($"Can't find AnimalCompanionAttacksEnhancement");
+                    }
+                    acbp.LevelEntries[i] = nl;
+                }
+                logger.Log($"AnimalCompanionBonusesProgression NEW LevelEntries.Length: {acbp.LevelEntries.Length}");
+            }
+
+
+            BlueprintFeature acr = GetBlueprint<BlueprintFeature>("AnimalCompanionRank");
+            if (acr == null)
+                return false;
+            acr.Ranks += extraLevel;
+            logger.Log($"AnimalCompanionRank NEW Ranks: {acr.Ranks}");
+            //            Game.Instance.BlueprintRoot.Progression.AnimalCompanion.DefaultBuild.Name
+            if (Game.Instance.BlueprintRoot.Progression.AnimalCompanion != null)
+            {
+                if (Game.Instance.BlueprintRoot.Progression.AnimalCompanion.DefaultBuild != null)
+                {
+                    if (Game.Instance.BlueprintRoot.Progression.AnimalCompanion.DefaultBuild.Name != null)
+                    {
+                        logger.Log($"Game.Instance.BlueprintRoot.Progression.AnimalCompanion.DefaultBuild.Name is {Game.Instance.BlueprintRoot.Progression.AnimalCompanion.DefaultBuild.Name}");
+                    }
+                    else
+                    {
+                        logger.Warning($"Game.Instance.BlueprintRoot.Progression.AnimalCompanion.DefaultBuild.Name is null");
+                    }
+                }
+                else
+                {
+                    logger.Warning($"Game.Instance.BlueprintRoot.Progression.AnimalCompanion.DefaultBuild is null");
+                    List<String> lf = Harmony12.Traverse.Create(Game.Instance.BlueprintRoot.Progression.AnimalCompanion).Fields();
+                    foreach (String f in lf)
+                    {
+                        Harmony12.Traverse fin = Harmony12.Traverse.Create(Game.Instance.BlueprintRoot.Progression.AnimalCompanion).Field(f);
+                        logger.Log($"Object {Game.Instance.BlueprintRoot.Progression.AnimalCompanion.ToString()}: field \"{f}\" (value \"{fin.GetValue()}\")");
+                    }
+                }
+            }
+            else
+            {
+                logger.Warning($"Game.Instance.BlueprintRoot.Progression.AnimalCompanion is null");
+            }
+            return true;
+        }
+
+
+        // {} [] <> ()
         [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.Class.LevelUp.LevelUpController), "GetEffectiveLevel")]
         // ReSharper disable once UnusedMember.Local
         private static class MoreCharacterLevelPatch1
@@ -397,6 +589,132 @@ namespace CL29
             }
         }
 
+        [Harmony12.HarmonyPatch(typeof(Kingmaker.Designers.Mechanics.Facts.CompanionBoon), "Apply")]
+        // ReSharper disable once UnusedMember.Local
+        private static class AnimalCompanionPatch1
+        {
+            private static void Postfix(Kingmaker.Designers.Mechanics.Facts.CompanionBoon __instance)
+            {
+                List<String> lf = Harmony12.Traverse.Create(__instance).Fields();
+                foreach (String f in lf)
+                {
+                    Harmony12.Traverse fin = Harmony12.Traverse.Create(__instance).Field(f);
+                    logger.Log($"Object {__instance.ToString()}: field \"{f}\" (value \"{fin.GetValue()}\")");
+                }
+
+                UnitDescriptor owner = __instance.Owner;
+                lf = Harmony12.Traverse.Create(owner).Fields();
+                foreach (String f in lf)
+                {
+                    Harmony12.Traverse fin = Harmony12.Traverse.Create(owner).Field(f);
+                    logger.Log($"Object {owner.ToString()}: field \"{f}\" (value \"{fin.GetValue()}\")");
+                }
+                logger.Log($"Object {owner.ToString()}: final rank is {owner.GetFact(__instance.RankFeature).GetRank()}"); ;
+            }
+        }
+
+        // {} [] <> ()
+        [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.FactLogic.AddPet), "GetPetLevel")]
+        // ReSharper disable once UnusedMember.Local
+        private static class AnimalCompanionPatch2
+        {
+            public static bool Prefix(ref Kingmaker.UnitLogic.FactLogic.AddPet __instance, ref int __result)
+            {
+                if (!ModSettings.enableSuperPet)
+                    return true;
+                if (!__instance.LevelRank)
+                {
+                    __result = 1;
+                    return false;
+                }
+                int a = RankToLevel.Length;
+                Fact fact = __instance.Owner.GetFact(__instance.LevelRank);
+                int? num = (fact != null) ? new int?(fact.GetRank()) : null;
+                int num2 = UnityEngine.Mathf.Min(a, (num == null) ? 0 : num.Value);
+                __result = RankToLevel[num2];
+                logger.Log($"AddPet.GetPetLevel: returning {__result}");
+                return false;
+            }
+        }
+        // {} [] <> ()
+        [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.FactLogic.AddPet), "TryLevelUpPet")]
+        // ReSharper disable once UnusedMember.Local
+        private static class AnimalCompanionPatch3
+        {
+            private static bool Prefix(ref Kingmaker.UnitLogic.FactLogic.AddPet __instance)
+            {
+                if (!ModSettings.enableSuperPet)
+                    return true;
+                if (__instance.SpawnedPet == null)
+                {
+                    return false;
+                }
+                AddClassLevels component = __instance.SpawnedPet.Blueprint.GetComponent<AddClassLevels>();
+                if (!component)
+                {
+                    return false;
+                }
+                int characterLevel = __instance.SpawnedPet.Descriptor.Progression.CharacterLevel;
+                //int petLevel = __instance.GetPetLevel(); // function is private, and we have duplicated it ...
+                int petLevel = 0;
+                AnimalCompanionPatch2.Prefix(ref __instance, ref petLevel);
+                int num = petLevel - characterLevel;
+                if (num > 0)
+                {
+                    component.LevelUp(__instance.SpawnedPet.Descriptor, num);
+                }
+                int a = RankToLevel.Length;
+                Fact fact = __instance.Owner.GetFact(__instance.LevelRank);
+                int? num2 = (fact != null) ? new int?(fact.GetRank()) : null;
+                int num3 = UnityEngine.Mathf.Min(a, (num2 == null) ? 0 : num2.Value);
+                if (num3 >= __instance.UpgradeLevel)
+                {
+                    __instance.SpawnedPet.Descriptor.Progression.Features.AddFeature(__instance.UpgradeFeature, null);
+                }
+                return false;
+            }
+        }
+
+        
+        // {} [] <> ()
+        [Harmony12.HarmonyPatch(typeof(ProgressionData), "RebuildLevelEntries")]
+        // ReSharper disable once UnusedMember.Local
+        private static class AnimalCompanionPatch
+        {
+            public static bool Prefix(ref ProgressionData __instance)
+            {
+                if (!ModSettings.enableSuperPet)
+                    return true;
+                if (__instance.Archetypes.Count <= 0)
+                {
+                    __instance.LevelEntries = __instance.Blueprint.LevelEntries;
+                    return false;
+                }
+                List<LevelEntry> list = new List<LevelEntry>();
+                for (int i = 1; i <= RankToLevel[RankToLevel.Length - 1]; i++)
+                {
+                    List<BlueprintFeatureBase> list2 = new List<BlueprintFeatureBase>(__instance.Blueprint.GetLevelEntry(i).Features);
+                    foreach (BlueprintArchetype blueprintArchetype in __instance.Archetypes)
+                    {
+                        foreach (BlueprintFeatureBase item in blueprintArchetype.GetRemoveEntry(i).Features)
+                        {
+                            list2.Remove(item);
+                        }
+                        list2.AddRange(blueprintArchetype.GetAddEntry(i).Features);
+                    }
+                    if (list2.Count > 0)
+                    {
+                        list.Add(new LevelEntry
+                        {
+                            Features = list2,
+                            Level = i
+                        });
+                    }
+                }
+                __instance.LevelEntries = list.ToArray();
+                return false;
+            }
+        }
         private static void OnSaveGui(UnityModManager.ModEntry modEntry)
         {
             ModSettings.Save(modEntry);
@@ -421,6 +739,19 @@ namespace CL29
                     ModSettings.enableLinearScale = !ModSettings.enableLinearScale;
                     ModSettings.maxLevel = modEnabled ? (ModSettings.enableLinearScale ? absoluteMax : normalMax) : 20;
                     updateXPTable();
+                }
+                UnityEngine.GUILayout.EndHorizontal();
+            }
+            catch (Exception e)
+            {
+                modEntry.Logger.Error($"Error rendering GUI: {e}");
+            }
+            try
+            {
+                UnityEngine.GUILayout.BeginHorizontal();
+                if (UnityEngine.GUILayout.Button($"{(ModSettings.enableSuperPet ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} Enable scaling of pets", UnityEngine.GUILayout.ExpandWidth(false)))
+                {
+                    ModSettings.enableSuperPet = !ModSettings.enableSuperPet;
                 }
                 UnityEngine.GUILayout.EndHorizontal();
             }
