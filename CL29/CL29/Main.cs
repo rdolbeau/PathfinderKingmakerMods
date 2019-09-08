@@ -419,6 +419,7 @@ namespace CL29
                     acbp.LevelEntries[i] = nl;
                 }
                 logger.Log($"AnimalCompanionBonusesProgression NEW LevelEntries.Length: {acbp.LevelEntries.Length}");
+
             }
 
 
@@ -455,6 +456,62 @@ namespace CL29
             else
             {
                 logger.Warning($"Game.Instance.BlueprintRoot.Progression.AnimalCompanion is null");
+            }
+            {
+                String[] allpets = {
+                "AnimalCompanionUnit",
+                "AnimalCompanionUnitBear",
+                "AnimalCompanionUnitBoar",
+                "AnimalCompanionUnitCentipede",
+                "AnimalCompanionUnitDog",
+                "AnimalCompanionUnitElk",
+                "AnimalCompanionUnitLeopard",
+                "AnimalCompanionUnitMammoth",
+                "AnimalCompanionUnitMonitor",
+                "AnimalCompanionUnitSmilodon",
+                "AnimalCompanionUnitWolf"};
+                String[] extrafeats = {
+                    "BlindFight",
+                    "Improved Initiative", // yes, with a space...
+                    "BlindFightImproved",
+                    "Mobility",
+                    "BlindFightGreater",
+                    "LightningReflexes",
+                    "BlindingCriticalFeature",
+                    "Outflank",
+                    "SiezeTheMoment" // yes, with that spelling...
+                    };
+                foreach (String thepet in allpets)
+                {
+                    BlueprintUnit p = GetBlueprint<BlueprintUnit>(thepet);
+                    if (p == null)
+                    {
+                        logger.Warning($"Can't find {thepet}");
+                        continue;
+                    }
+                    AddClassLevels acl = p.GetComponent<AddClassLevels>();
+                    if (acl == null)
+                    {
+                        logger.Warning($"Can't find AddClassLevels for {thepet}");
+                        continue;
+                    }
+                    int sl = acl.Selections.Length;
+                    for (int i = 0; i < sl; i++)
+                    {
+                        int fl = acl.Selections[i].Features.Length;
+
+                        logger.Log($"{thepet} had {fl} features");
+                        System.Array.Resize<BlueprintFeature>(ref acl.Selections[i].Features, fl + extrafeats.Length);
+                        for (int j = 0; j < extrafeats.Length; j++)
+                        {
+                            BlueprintFeature bf = GetBlueprint<BlueprintFeature>(extrafeats[j]);
+                            acl.Selections[i].Features[fl + j] = bf;
+                            if (bf == null)
+                                logger.Warning($"Couldn't find {extrafeats[j]} for {thepet}");
+                        }
+                        logger.Log($"{thepet} now has {acl.Selections[i].Features.Length} features");
+                    }
+                }
             }
             return true;
         }
@@ -679,7 +736,7 @@ namespace CL29
         // {} [] <> ()
         [Harmony12.HarmonyPatch(typeof(ProgressionData), "RebuildLevelEntries")]
         // ReSharper disable once UnusedMember.Local
-        private static class AnimalCompanionPatch
+        private static class AnimalCompanionPatch4
         {
             public static bool Prefix(ref ProgressionData __instance)
             {
