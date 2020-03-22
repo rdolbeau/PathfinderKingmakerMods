@@ -19,6 +19,7 @@ namespace CL29
     {
         public bool enableLinearScale = false;
         public bool enableSuperPet = false;
+        public bool notTopHeavySpell = false;
         public int maxLevel = Main.normalMax;
 
         public override void Save(UnityModManager.ModEntry modEntry)
@@ -156,8 +157,29 @@ namespace CL29
                                 sorcerer.Spellbook.SpellsPerDay.Levels[i - 1].Count[j];
                         }
                         // add a Lvl9 + Lvl1, Lvl9 + Lvl2, etc. instead
-                        sorcerer.Spellbook.SpellsPerDay.Levels[i].Count[9]++;
-                        sorcerer.Spellbook.SpellsPerDay.Levels[i].Count[((i - 21) % 9) + 1]++;
+                        if (!ModSettings.notTopHeavySpell)
+                        {
+                            sorcerer.Spellbook.SpellsPerDay.Levels[i].Count[9]++;
+                            sorcerer.Spellbook.SpellsPerDay.Levels[i].Count[((i - 21) % 9) + 1]++;
+                        }
+                        else
+                        {
+                            int excessLvl = i - 20;
+                            int totBonusSpLvl = 10 + (excessLvl / 2);
+                            int startingPoint = 9 - ((i - 21) % 9); //9, 8, 7... 1
+                            int next = startingPoint;
+                            while ((totBonusSpLvl >= next) && (next > 0))
+                            {
+                                sorcerer.Spellbook.SpellsPerDay.Levels[i].Count[next]++;
+                                totBonusSpLvl -= next;
+                                if (totBonusSpLvl <= 9)
+                                    next = totBonusSpLvl;
+                                else
+                                    next = 9;
+                            }
+                            if (totBonusSpLvl != 0)
+                                logger.Warning($"Some bonus spell levels were unassigned...");
+                        }
 
                         sorcerer.Spellbook.SpellsKnown.Levels[i] = new SpellsLevelEntry();
                         sorcerer.Spellbook.SpellsKnown.Levels[i].Count = new int[10]; // going beyond LvL9 crashes the UI
@@ -195,9 +217,30 @@ namespace CL29
                         {
                             wizard.Spellbook.SpellsPerDay.Levels[i].Count[j] = wizard.Spellbook.SpellsPerDay.Levels[i - 1].Count[j];
                         }
-                        // add a Lvl9 + Lvl1, Lvl9 + Lvl2, etc. instead
-                        wizard.Spellbook.SpellsPerDay.Levels[i].Count[9]++;
-                        wizard.Spellbook.SpellsPerDay.Levels[i].Count[((i - 21) % 9) + 1]++;
+                        if (!ModSettings.notTopHeavySpell)
+                        {
+                            // add a Lvl9 + Lvl1, Lvl9 + Lvl2, etc. instead
+                            wizard.Spellbook.SpellsPerDay.Levels[i].Count[9]++;
+                            wizard.Spellbook.SpellsPerDay.Levels[i].Count[((i - 21) % 9) + 1]++;
+                        }
+                        else
+                        {
+                            int excessLvl = i - 20;
+                            int totBonusSpLvl = 10 + (excessLvl / 2);
+                            int startingPoint = 9 - ((i - 21) % 9); //9, 8, 7... 1
+                            int next = startingPoint;
+                            while ((totBonusSpLvl >= next) && (next > 0))
+                            {
+                                wizard.Spellbook.SpellsPerDay.Levels[i].Count[next]++;
+                                totBonusSpLvl -= next;
+                                if (totBonusSpLvl <= 9)
+                                    next = totBonusSpLvl;
+                                else
+                                    next = 9;
+                            }
+                            if (totBonusSpLvl != 0)
+                                logger.Warning($"Some bonus spell levels were unassigned...");
+                        }
                     }
                 }
             }
@@ -225,8 +268,30 @@ namespace CL29
                             bard.Spellbook.SpellsPerDay.Levels[i].Count[j] =
                                 bard.Spellbook.SpellsPerDay.Levels[i - 1].Count[j];
                         }
-                        bard.Spellbook.SpellsPerDay.Levels[i].Count[6]++;
-                        bard.Spellbook.SpellsPerDay.Levels[i].Count[(i - 21) % 6 + 1]++;
+
+                        if (!ModSettings.notTopHeavySpell)
+                        {
+                            bard.Spellbook.SpellsPerDay.Levels[i].Count[6]++;
+                            bard.Spellbook.SpellsPerDay.Levels[i].Count[(i - 21) % 6 + 1]++;
+                        }
+                        else
+                        {
+                            int excessLvl = i - 20;
+                            int totBonusSpLvl = 7 + (excessLvl / 2);
+                            int startingPoint = 6 - ((i - 21) % 6); //6,5,4... 1
+                            int next = startingPoint;
+                            while ((totBonusSpLvl >= next) && (next > 0))
+                            {
+                                bard.Spellbook.SpellsPerDay.Levels[i].Count[next]++;
+                                totBonusSpLvl -= next;
+                                if (totBonusSpLvl <= 6)
+                                    next = totBonusSpLvl;
+                                else
+                                    next = 6;
+                            }
+                            if (totBonusSpLvl != 0)
+                                logger.Warning($"Some bonus spell levels were unassigned...");
+                        }
 
                         bard.Spellbook.SpellsKnown.Levels[i] = new SpellsLevelEntry();
                         bard.Spellbook.SpellsKnown.Levels[i].Count = new int[7];
@@ -262,8 +327,30 @@ namespace CL29
                             magus.Spellbook.SpellsPerDay.Levels[i].Count[j] =
                                 magus.Spellbook.SpellsPerDay.Levels[i - 1].Count[j];
                         }
-                        magus.Spellbook.SpellsPerDay.Levels[i].Count[6]++;
-                        magus.Spellbook.SpellsPerDay.Levels[i].Count[(i - 21) % 6 + 1]++;
+
+                        if (!ModSettings.notTopHeavySpell)
+                        {
+                            magus.Spellbook.SpellsPerDay.Levels[i].Count[6]++;
+                            magus.Spellbook.SpellsPerDay.Levels[i].Count[(i - 21) % 6 + 1]++;
+                        }
+                        else
+                        {
+                            int excessLvl = i - 20;
+                            int totBonusSpLvl = 7 + (excessLvl / 2);
+                            int startingPoint = 6 - ((i - 21) % 6); //6,5,4... 1
+                            int next = startingPoint;
+                            while ((totBonusSpLvl >= next) && (next > 0))
+                            {
+                                magus.Spellbook.SpellsPerDay.Levels[i].Count[next]++;
+                                totBonusSpLvl -= next;
+                                if (totBonusSpLvl <= 6)
+                                    next = totBonusSpLvl;
+                                else
+                                    next = 6;
+                            }
+                            if (totBonusSpLvl != 0)
+                                logger.Warning($"Some bonus spell levels were unassigned...");
+                        }
                     }
                 }
             }
@@ -662,32 +749,6 @@ namespace CL29
             }
         }
 
-        /*
-        [Harmony12.HarmonyPatch(typeof(Kingmaker.Designers.Mechanics.Facts.CompanionBoon), "Apply")]
-        // ReSharper disable once UnusedMember.Local
-        private static class AnimalCompanionPatch1
-        {
-            private static void Postfix(Kingmaker.Designers.Mechanics.Facts.CompanionBoon __instance)
-            {
-                List<String> lf = Harmony12.Traverse.Create(__instance).Fields();
-                foreach (String f in lf)
-                {
-                    Harmony12.Traverse fin = Harmony12.Traverse.Create(__instance).Field(f);
-                    logger.Log($"Object {__instance.ToString()}: field \"{f}\" (value \"{fin.GetValue()}\")");
-                }
-
-                UnitDescriptor owner = __instance.Owner;
-                lf = Harmony12.Traverse.Create(owner).Fields();
-                foreach (String f in lf)
-                {
-                    Harmony12.Traverse fin = Harmony12.Traverse.Create(owner).Field(f);
-                    logger.Log($"Object {owner.ToString()}: field \"{f}\" (value \"{fin.GetValue()}\")");
-                }
-                logger.Log($"Object {owner.ToString()}: final rank is {owner.GetFact(__instance.RankFeature).GetRank()}"); ;
-            }
-        }
-        */
-
         // {} [] <> ()
         [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.FactLogic.AddPet), "GetPetLevel")]
         // ReSharper disable once UnusedMember.Local
@@ -825,9 +886,22 @@ namespace CL29
             try
             {
                 UnityEngine.GUILayout.BeginHorizontal();
-                if (UnityEngine.GUILayout.Button($"{(ModSettings.enableSuperPet ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} Enable scaling of pets", UnityEngine.GUILayout.ExpandWidth(false)))
+                if (UnityEngine.GUILayout.Button($"{(ModSettings.enableSuperPet ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} Enable scaling of pets [VERY experimental]", UnityEngine.GUILayout.ExpandWidth(false)))
                 {
                     ModSettings.enableSuperPet = !ModSettings.enableSuperPet;
+                }
+                UnityEngine.GUILayout.EndHorizontal();
+            }
+            catch (Exception e)
+            {
+                modEntry.Logger.Error($"Error rendering GUI: {e}");
+            }
+            try
+            {
+                UnityEngine.GUILayout.BeginHorizontal();
+                if (UnityEngine.GUILayout.Button($"{(ModSettings.notTopHeavySpell ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} Disable the top-heayv spell progression", UnityEngine.GUILayout.ExpandWidth(false)))
+                {
+                    ModSettings.notTopHeavySpell = !ModSettings.notTopHeavySpell;
                 }
                 UnityEngine.GUILayout.EndHorizontal();
             }
