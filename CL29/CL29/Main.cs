@@ -175,7 +175,10 @@ namespace CL29
                                 if (totBonusSpLvl <= 9)
                                     next = totBonusSpLvl;
                                 else
-                                    next = 9;
+                                {
+                                    startingPoint = 1 + (startingPoint % 9);
+                                    next = startingPoint;
+                                }
                             }
                             if (totBonusSpLvl != 0)
                                 logger.Warning($"Some bonus spell levels were unassigned...");
@@ -236,7 +239,10 @@ namespace CL29
                                 if (totBonusSpLvl <= 9)
                                     next = totBonusSpLvl;
                                 else
-                                    next = 9;
+                                {
+                                    startingPoint = 1 + (startingPoint % 9);
+                                    next = startingPoint;
+                                }
                             }
                             if (totBonusSpLvl != 0)
                                 logger.Warning($"Some bonus spell levels were unassigned...");
@@ -287,7 +293,10 @@ namespace CL29
                                 if (totBonusSpLvl <= 6)
                                     next = totBonusSpLvl;
                                 else
-                                    next = 6;
+                                {
+                                    startingPoint = 1 + (startingPoint % 6);
+                                    next = startingPoint;
+                                }
                             }
                             if (totBonusSpLvl != 0)
                                 logger.Warning($"Some bonus spell levels were unassigned...");
@@ -346,7 +355,10 @@ namespace CL29
                                 if (totBonusSpLvl <= 6)
                                     next = totBonusSpLvl;
                                 else
-                                    next = 6;
+                                {
+                                    startingPoint = 1 + (startingPoint % 6);
+                                    next = startingPoint;
+                                }
                             }
                             if (totBonusSpLvl != 0)
                                 logger.Warning($"Some bonus spell levels were unassigned...");
@@ -886,9 +898,10 @@ namespace CL29
             try
             {
                 UnityEngine.GUILayout.BeginHorizontal();
-                if (UnityEngine.GUILayout.Button($"{(ModSettings.enableSuperPet ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} Enable scaling of pets [VERY experimental]", UnityEngine.GUILayout.ExpandWidth(false)))
+                if (UnityEngine.GUILayout.Button($"{(ModSettings.enableSuperPet ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} Enable scaling of pets [VERY experimental, probably requires restart]", UnityEngine.GUILayout.ExpandWidth(false)))
                 {
                     ModSettings.enableSuperPet = !ModSettings.enableSuperPet;
+                    updateXPTable();
                 }
                 UnityEngine.GUILayout.EndHorizontal();
             }
@@ -899,9 +912,10 @@ namespace CL29
             try
             {
                 UnityEngine.GUILayout.BeginHorizontal();
-                if (UnityEngine.GUILayout.Button($"{(ModSettings.notTopHeavySpell ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} Disable the top-heayv spell progression", UnityEngine.GUILayout.ExpandWidth(false)))
+                if (UnityEngine.GUILayout.Button($"{(ModSettings.notTopHeavySpell ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} Disable the top-heayv spell progression (requires restart)", UnityEngine.GUILayout.ExpandWidth(false)))
                 {
                     ModSettings.notTopHeavySpell = !ModSettings.notTopHeavySpell;
+                    updateXPTable();
                 }
                 UnityEngine.GUILayout.EndHorizontal();
             }
