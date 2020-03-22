@@ -5,6 +5,9 @@ using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Facts;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic;
+using Kingmaker.UnitLogic.Class.LevelUp;
+using Kingmaker.UnitLogic.Class.LevelUp.Actions;
+using Kingmaker.Blueprints.Classes.Selection;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -457,6 +460,7 @@ namespace CL29
             {
                 logger.Warning($"Game.Instance.BlueprintRoot.Progression.AnimalCompanion is null");
             }
+            //if (true)
             {
                 String[] allpets = {
                 "AnimalCompanionUnit",
@@ -496,6 +500,12 @@ namespace CL29
                         continue;
                     }
                     int sl = acl.Selections.Length;
+                    /* if (sl > 1)
+                    {
+                        logger.Warning($"Chopping acl.Selections...");
+                        System.Array.Resize<SelectionEntry>(ref acl.Selections, 1);
+                        sl = 1;
+                    } */
                     for (int i = 0; i < sl; i++)
                     {
                         int fl = acl.Selections[i].Features.Length;
@@ -518,7 +528,7 @@ namespace CL29
 
 
         // {} [] <> ()
-        [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.Class.LevelUp.LevelUpController), "GetEffectiveLevel")]
+        [Harmony12.HarmonyPatch(typeof(LevelUpController), "GetEffectiveLevel")]
         // ReSharper disable once UnusedMember.Local
         private static class MoreCharacterLevelPatch1
         {
@@ -544,7 +554,7 @@ namespace CL29
                 return false;
             }
         }
-        [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.Class.LevelUp.LevelUpController), "CanLevelUp")]
+        [Harmony12.HarmonyPatch(typeof(LevelUpController), "CanLevelUp")]
         // ReSharper disable once UnusedMember.Local
         private static class MoreCharacterLevelPatch2
         {
@@ -596,14 +606,15 @@ namespace CL29
             }
         }
 
-        [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.UnitProgressionData), "AddClassLevel")]
+        [Harmony12.HarmonyPatch(typeof(UnitProgressionData), "AddClassLevel")]
         // ReSharper disable once UnusedMember.Local
         private static class MoreCharacterLevelPatch5
         {
-            private static bool Prefix()
+            private static bool Prefix(/* ref */ UnitProgressionData __instance)
             {
                 if (!tablePatched)
                     updateXPTable();
+                //logger.Log($"AddClassLevel called on ${__instance.Owner.ToString()}");
                 return true;
             }
         }
@@ -615,14 +626,19 @@ namespace CL29
         {
             private static bool Prefix(ref int level)
             {
-                if (level > 20)
-                    level = 41 - level;
+                do
+                {
+                    if (level > 20)
+                        level = 41 - level;
+                    if (level <= 0)
+                        level = 1 - level;
+                } while ((level > 20) || (level <= 0));
                 return true;
             }
         }
 
 
-        [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.UnitProgressionData), "GainExperience")]
+        [Harmony12.HarmonyPatch(typeof(UnitProgressionData), "GainExperience")]
         // ReSharper disable once UnusedMember.Local
         private static class MoreCharacterLevelPatch7
         {
@@ -646,6 +662,7 @@ namespace CL29
             }
         }
 
+        /*
         [Harmony12.HarmonyPatch(typeof(Kingmaker.Designers.Mechanics.Facts.CompanionBoon), "Apply")]
         // ReSharper disable once UnusedMember.Local
         private static class AnimalCompanionPatch1
@@ -669,6 +686,7 @@ namespace CL29
                 logger.Log($"Object {owner.ToString()}: final rank is {owner.GetFact(__instance.RankFeature).GetRank()}"); ;
             }
         }
+        */
 
         // {} [] <> ()
         [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.FactLogic.AddPet), "GetPetLevel")]
@@ -772,7 +790,161 @@ namespace CL29
                 return false;
             }
         }
-        private static void OnSaveGui(UnityModManager.ModEntry modEntry)
+
+        // {} [] <> ()
+        /*
+        [Harmony12.HarmonyPatch(typeof(Kingmaker.UnitLogic.FactLogic.AddPet), "TryLevelUpPet")]
+        // ReSharper disable once UnusedMember.Local
+        private static class AnimalCompanionPatch5
+        {
+            public static void Postfix(Kingmaker.UnitLogic.FactLogic.AddPet __instance)
+            {
+                logger.Log($"TryLevelUpPet was called on {__instance.Pet.name}");
+                foreach (Feature f in __instance.SpawnedPet.Descriptor.Progression.Features)
+                {
+                    logger.Log($"\tFeature present: {f.Name} / {f.ToString()}");
+                }
+                logger.Log($"It seem UpgradeFeature was {__instance.UpgradeFeature.Name} / ${__instance.UpgradeFeature.ToString()}");
+            }
+        }
+        */
+
+        [Harmony12.HarmonyPatch(typeof(AddClassLevels), "PerformSelections")]
+        // ReSharper disable once UnusedMember.Local
+        private static class AnimalCompanionPatch6
+        {
+            /*
+            private static bool Prefix(AddClassLevels __instance)
+            {
+                logger.Log($"PerformSelections called on {__instance.name} / {__instance.ToString()}");
+                SelectionEntry[] selections = __instance.Selections;
+                foreach (SelectionEntry se in selections)
+                {
+                    logger.Log($"\tSelection: {se.ToString()}");
+                    foreach (BlueprintFeature f in se.Features)
+                    {
+                        logger.Log($"\t\tFeature in Selection: {f.name} / {f.Name} / {f.ToString()}");
+                    }
+                }
+                return true;
+            }
+            */
+            private static bool Prefix(ref AddClassLevels __instance, LevelUpController controller, Dictionary<SelectionEntry, HashSet<int>> selectionsHistory, Kingmaker.UnitLogic.Class.LevelUp.Actions.LevelUpActionPriority? maxPriority = null)
+            {
+                if (!ModSettings.enableSuperPet)
+                    return true;
+                SelectionEntry[] selections = __instance.Selections;
+                int i = 0;
+                logger.Log($"PerformSelections called on {__instance.name} / {__instance.ToString()} with {controller?.ToString()}, {selectionsHistory?.ToString()}, {maxPriority?.ToString()}");
+                while (i < selections.Length)
+                {
+                    SelectionEntry selectionEntry = selections[i];
+                    logger.Log($"\tChecking {selectionEntry.ToString()}, {i} out of {selections.Length}");
+                    if (maxPriority == null)
+                    {
+                        goto IL_66;
+                    }
+                    if (selectionEntry.IsParametrizedFeature)
+                    {
+                        logger.Log($"\t\tIsParametrizedFeature == true for {selectionEntry.ToString()}");
+                        if (SelectFeature.CalculatePriority(selectionEntry.ParametrizedFeature) <= maxPriority.Value)
+                        {
+                            goto IL_66;
+                        }
+                    }
+                    else if (SelectFeature.CalculatePriority(selectionEntry.Selection) <= maxPriority.Value)
+                    {
+                        goto IL_66;
+                    }
+                IL_253:
+                    i++;
+                    logger.Log($"\t\t\"continue\" for {selectionEntry.ToString()}");
+                    continue;
+                IL_66:
+                    HashSet<int> hashSet;
+                    if (!selectionsHistory.TryGetValue(selectionEntry, out hashSet))
+                    {
+                        logger.Log($"\t\tNo selectionsHistory for {selectionEntry.ToString()}");
+                        hashSet = new HashSet<int>();
+                        selectionsHistory[selectionEntry] = hashSet;
+                    } else
+                    {
+                        foreach (int x in hashSet)
+                            logger.Log($"\t\t\tselectionsHistory hashSet include {x}");
+                    }
+                    if (selectionEntry.IsParametrizedFeature)
+                    {
+                        logger.Log($"\t\tIsParametrizedFeature == true (bis) for {selectionEntry.ToString()}");
+                        FeatureSelectionState featureSelectionState = controller.State.FindSelection(selectionEntry.ParametrizedFeature, false);
+                        if (featureSelectionState != null)
+                        {
+                            FeatureUIData item;
+                            switch (selectionEntry.ParametrizedFeature.ParameterType)
+                            {
+                                case FeatureParameterType.Custom:
+                                case FeatureParameterType.SpellSpecialization:
+                                    item = new FeatureUIData(selectionEntry.ParametrizedFeature, selectionEntry.ParamObject, string.Empty, string.Empty, null, selectionEntry.ParamObject.ToString());
+                                    break;
+                                case FeatureParameterType.WeaponCategory:
+                                    item = new FeatureUIData(selectionEntry.ParametrizedFeature, selectionEntry.ParamWeaponCategory, string.Empty, string.Empty, null, selectionEntry.ParamWeaponCategory.ToString());
+                                    break;
+                                case FeatureParameterType.SpellSchool:
+                                    item = new FeatureUIData(selectionEntry.ParametrizedFeature, selectionEntry.ParamSpellSchool, string.Empty, string.Empty, null, selectionEntry.ParamSpellSchool.ToString());
+                                    break;
+                                case FeatureParameterType.LearnSpell:
+                                    goto IL_1BD;
+                                case FeatureParameterType.Skill:
+                                    item = new FeatureUIData(selectionEntry.ParametrizedFeature, selectionEntry.Stat, string.Empty, string.Empty, null, selectionEntry.Stat.ToString());
+                                    break;
+                                default:
+                                    goto IL_1BD;
+                            }
+                            logger.Log($"\t\tCalling SelectFeature for {selectionEntry.ToString()}");
+                            controller.SelectFeature(featureSelectionState, item);
+                            goto IL_1CE;
+                        IL_1BD:
+                            throw new ArgumentOutOfRangeException();
+                        }
+                    IL_1CE:
+                        goto IL_253;
+                    }
+                    for (int j = 0; j < selectionEntry.Features.Length; j++)
+                    {
+                        logger.Log($"\t\tChecking Features for {selectionEntry.ToString()}, {j} out of {selectionEntry.Features.Length}");
+                        if (!hashSet.Contains(j))
+                        {
+                            BlueprintFeature blueprintFeature = selectionEntry.Features[j];
+                            FeatureSelectionState featureSelectionState2 = controller.State.FindSelection(selectionEntry.Selection, false);
+                            logger.Log($"\t\t\tChecking {blueprintFeature.ToString()} for {selectionEntry.ToString()}");
+                            logger.Log($"\t\tMaybe (null checks) calling SelectFeature for {selectionEntry.ToString()}");
+                            if (featureSelectionState2 != null && blueprintFeature != null && controller.SelectFeature(featureSelectionState2, blueprintFeature))
+                            {
+                                hashSet.Add(j);
+                            }
+                        }
+                    }
+                    goto IL_253;
+                }
+                return false;
+            }
+        }
+
+        // {} [] <> ()
+        /*
+        [Harmony12.HarmonyPatch(typeof(LevelUpController), "SelectFeature")]
+        // ReSharper disable once UnusedMember.Local
+        private static class AnimalCompanionPatch7
+        {
+            // ReSharper disable once UnusedMember.Local
+            private static bool Prefix(FeatureSelectionState selection, Kingmaker.Blueprints.Classes.Selection.IFeatureSelectionItem item)
+            {
+                logger.Log($"SelectFeature selected {selection?.ToString()} / {selection?.Parent?.ToString()} / {selection?.Selection?.ToString()}");
+                return true;
+            }
+        }
+        */
+
+                private static void OnSaveGui(UnityModManager.ModEntry modEntry)
         {
             ModSettings.Save(modEntry);
         }
